@@ -1,3 +1,7 @@
+/**
+ * @file BlockJacobi_solver.cpp
+ * @brief Implementation of the BlockJacobi_solver class.
+ */
 #include "BlockJacobi_solver.hpp"
 #include <mpi.h>
 #include <omp.h>
@@ -6,6 +10,15 @@
 #include <Eigen/Sparse>
 #include <Eigen/SparseLU>
 
+/**
+ * @brief Solves the Poisson equation using the Block Jacobi method.
+ * 
+ * In this implementation, the local domain block for each MPI process is solved
+ * exactly using Eigen's SparseLU direct solver, while the global problem is 
+ * iteratively solved using the Jacobi scheme for boundary updates between blocks.
+ * 
+ * @return std::vector<double> The global computed solution vector flattened in 1D.
+ */
 std::vector<double> BlockJacobi_solver::solve() {
     int mpi_rank, mpi_size;
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);

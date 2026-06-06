@@ -16,8 +16,8 @@ This directory contains scripts to evaluate the performance and scalability of t
    ./test_scalability.sh
    ```
 
-The script will compile the code, create a `data` folder to store the output VTK files for different configurations, and populate `benchmark.md` with the execution times and $L_2$ errors.
+The script will compile the code, create a `data` folder to store the output VTK files for different configurations, and populate `RESULT.md` with the execution times and $L_2$ errors.
 
 ## Examining the output
 - VTK files can be opened using **ParaView**.
-- You can compare the times inside `benchmark.md` to analyze the speedup obtained through MPI and OpenMP hybrid parallelism.
+- You can compare the times inside `RESULT.md` to analyze the speedup obtained through MPI and OpenMP hybrid parallelism.

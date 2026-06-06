@@ -1,3 +1,7 @@
+/**
+ * @file main.cpp
+ * @brief Main entry point for the Poisson equation solvers evaluation.
+ */
 #include "Jacobi_solver.hpp"
 #include "BlockJacobi_solver.hpp"
 #include <mpi.h>
@@ -9,12 +13,25 @@
 const double PI = std::acos(-1.0);
 
 // --- Homogeneous Problem ---
-// Forcing term f(x,y)
+
+/**
+ * @brief Forcing term f(x,y) for the homogeneous Dirichlet problem.
+ * 
+ * @param x X-coordinate.
+ * @param y Y-coordinate.
+ * @return double The value of the forcing term at (x,y).
+ */
 double f_source_homo(double x, double y) {
     return 8.0 * PI * PI * std::sin(2.0 * PI * x) * std::sin(2.0 * PI * y);
 }
 
-// Exact solution u(x,y)
+/**
+ * @brief Exact solution u(x,y) for the homogeneous Dirichlet problem.
+ * 
+ * @param x X-coordinate.
+ * @param y Y-coordinate.
+ * @return double The value of the exact solution at (x,y).
+ */
 double u_exact_homo(double x, double y) {
     return std::sin(2.0 * PI * x) * std::sin(2.0 * PI * y);
 }
@@ -26,19 +43,47 @@ double u_exact_homo(double x, double y) {
 // Boundary conditions: g(x,y) = x + y
 // Delta(x+y) = 0, so f is the same!
 
+/**
+ * @brief Forcing term f(x,y) for the non-homogeneous Dirichlet problem.
+ * 
+ * @param x X-coordinate.
+ * @param y Y-coordinate.
+ * @return double The value of the forcing term at (x,y).
+ */
 double f_source_nonhomo(double x, double y) {
     return 8.0 * PI * PI * std::sin(2.0 * PI * x) * std::sin(2.0 * PI * y);
 }
 
+/**
+ * @brief Boundary condition function g(x,y) for the non-homogeneous Dirichlet problem.
+ * 
+ * @param x X-coordinate.
+ * @param y Y-coordinate.
+ * @return double The value of the boundary condition at (x,y).
+ */
 double g_boundary_nonhomo(double x, double y) {
     return x + y;
 }
 
+/**
+ * @brief Exact solution u(x,y) for the non-homogeneous Dirichlet problem.
+ * 
+ * @param x X-coordinate.
+ * @param y Y-coordinate.
+ * @return double The value of the exact solution at (x,y).
+ */
 double u_exact_nonhomo(double x, double y) {
     return std::sin(2.0 * PI * x) * std::sin(2.0 * PI * y) + x + y;
 }
 
-// Export the solution in VTK format for ParaView
+/**
+ * @brief Exports the solution in VTK format for visualization in ParaView.
+ * 
+ * @param filename Name of the output VTK file.
+ * @param u The solution vector (1D flattened 2D grid).
+ * @param n Grid size (number of points per dimension).
+ * @param h Grid spacing.
+ */
 void export_vtk(const std::string& filename, const std::vector<double>& u, unsigned n, double h) {
     std::ofstream out(filename);
     if (!out) {
@@ -65,6 +110,18 @@ void export_vtk(const std::string& filename, const std::vector<double>& u, unsig
     out.close();
 }
 
+/**
+ * @brief Evaluates the computed solution against the exact solution.
+ * 
+ * Computes the L2 error and exports the solution to a VTK file (done by rank 0).
+ * 
+ * @param name The base name for output messages and files.
+ * @param u The computed solution vector.
+ * @param exact The exact solution function.
+ * @param n Grid size.
+ * @param mpi_rank The MPI rank of the current process.
+ * @param time Elapsed time for the solver.
+ */
 void evaluate_solution(const std::string& name, const std::vector<double>& u, std::function<double(double,double)> exact, unsigned n, int mpi_rank, double time) {
     if (mpi_rank == 0) {
         double h = 1.0 / (n - 1);
@@ -83,6 +140,16 @@ void evaluate_solution(const std::string& name, const std::vector<double>& u, st
     }
 }
 
+/**
+ * @brief Main function.
+ * 
+ * Initializes MPI, parses command line arguments for grid size, instantiates solvers,
+ * executes them, and triggers result evaluation.
+ * 
+ * @param argc Number of command-line arguments.
+ * @param argv Command-line arguments.
+ * @return int Exit status.
+ */
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
 

@@ -1,9 +1,21 @@
+/**
+ * @file Jacobi_solver.cpp
+ * @brief Implementation of the Jacobi_solver class.
+ */
 #include "Jacobi_solver.hpp"
 #include <mpi.h>
 #include <omp.h>
 #include <iostream>
 #include <cmath>
 
+/**
+ * @brief Solves the Poisson equation using the matrix-free parallel Jacobi method.
+ * 
+ * This method uses MPI to distribute the domain among processes and OpenMP
+ * to parallelize the local domain updates.
+ * 
+ * @return std::vector<double> The global computed solution vector flattened in 1D.
+ */
 std::vector<double> Jacobi_solver::solve() {
     int mpi_rank, mpi_size;
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
