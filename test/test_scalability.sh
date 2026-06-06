@@ -32,16 +32,19 @@ for p in "${PROCS[@]}"; do
         # Run the solver and capture output
         OUTPUT=$(mpirun -np $p ../jacobi_solver $n)
         
-        # Extract Time and Error from output
-        TIME=$(echo "$OUTPUT" | grep "Time elapsed:" | awk '{print $3}')
-        ERR=$(echo "$OUTPUT" | grep "L2 Error" | awk '{print $6}')
+        # Extract Time and Error from output for BlockJacobi_Homo
+        TIME=$(echo "$OUTPUT" | grep "\[BlockJacobi_Homo\]" | awk '{print $5}')
+        ERR=$(echo "$OUTPUT" | grep "\[BlockJacobi_Homo\]" | awk '{print $9}')
         
         echo "| $n | $TIME | $ERR |" >> RESULT.md
         
         # Save VTK output with specific names
-        if [ -f ../solution.vtk ]; then
-            mv ../solution.vtk data/solution_${p}procs_${n}n.vtk
-        fi
+        for vtk_file in ../Jacobi_Homo.vtk ../BlockJacobi_Homo.vtk ../BlockJacobi_NonHomo.vtk; do
+            if [ -f "$vtk_file" ]; then
+                base_name=$(basename "$vtk_file" .vtk)
+                mv "$vtk_file" "data/${base_name}_${p}procs_${n}n.vtk"
+            fi
+        done
     done
     echo "" >> RESULT.md
 done

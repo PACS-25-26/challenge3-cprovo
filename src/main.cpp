@@ -1,4 +1,5 @@
 #include "Jacobi_solver.hpp"
+#include "BlockJacobi_solver.hpp"
 #include <mpi.h>
 #include <iostream>
 #include <fstream>
@@ -7,14 +8,34 @@
 
 const double PI = std::acos(-1.0);
 
+// --- Homogeneous Problem ---
 // Forcing term f(x,y)
-double f_source(double x, double y) {
+double f_source_homo(double x, double y) {
     return 8.0 * PI * PI * std::sin(2.0 * PI * x) * std::sin(2.0 * PI * y);
 }
 
 // Exact solution u(x,y)
-double u_exact(double x, double y) {
+double u_exact_homo(double x, double y) {
     return std::sin(2.0 * PI * x) * std::sin(2.0 * PI * y);
+}
+
+
+// --- Non-Homogeneous Problem ---
+// Equation: -Delta u = f
+// Exact solution: u(x,y) = sin(2*pi*x)*sin(2*pi*y) + x + y
+// Boundary conditions: g(x,y) = x + y
+// Delta(x+y) = 0, so f is the same!
+
+double f_source_nonhomo(double x, double y) {
+    return 8.0 * PI * PI * std::sin(2.0 * PI * x) * std::sin(2.0 * PI * y);
+}
+
+double g_boundary_nonhomo(double x, double y) {
+    return x + y;
+}
+
+double u_exact_nonhomo(double x, double y) {
+    return std::sin(2.0 * PI * x) * std::sin(2.0 * PI * y) + x + y;
 }
 
 // Export the solution in VTK format for ParaView
@@ -36,12 +57,30 @@ void export_vtk(const std::string& filename, const std::vector<double>& u, unsig
     out << "SCALARS u double 1\n";
     out << "LOOKUP_TABLE default\n";
 
-    for (unsigned i = 0; i < n; ++i) { // y-axis
-        for (unsigned j = 0; j < n; ++j) { // x-axis
+    for (unsigned j = 0; j < n; ++j) { // y-axis
+        for (unsigned i = 0; i < n; ++i) { // x-axis
             out << u[i * n + j] << "\n";
         }
     }
     out.close();
+}
+
+void evaluate_solution(const std::string& name, const std::vector<double>& u, std::function<double(double,double)> exact, unsigned n, int mpi_rank, double time) {
+    if (mpi_rank == 0) {
+        double h = 1.0 / (n - 1);
+        double l2_err_sq = 0.0;
+        for (unsigned i = 0; i < n; ++i) {
+            double x = i * h;
+            for (unsigned j = 0; j < n; ++j) {
+                double y = j * h;
+                double diff = u[i * n + j] - exact(x, y);
+                l2_err_sq += diff * diff;
+            }
+        }
+        double l2_err = std::sqrt(h * l2_err_sq);
+        std::cout << "[" << name << "] Time elapsed: " << time << " s, L2 Error: " << l2_err << std::endl;
+        export_vtk(name + ".vtk", u, n, h);
+    }
 }
 
 int main(int argc, char** argv) {
@@ -50,41 +89,45 @@ int main(int argc, char** argv) {
     int mpi_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
 
-    unsigned n = 128; // Default size
+    unsigned n = 64; // Default size (reduced slightly to make Block Jacobi faster for testing)
     if (argc > 1) {
         n = std::atoi(argv[1]);
     }
 
-    // Set tolerance and max iterations
     double tol = 1e-4;
     unsigned max_iter = 100000;
 
-    Jacobi_solver solver(tol, max_iter, n, f_source);
-    
-    double t_start = MPI_Wtime();
-    std::vector<double> u = solver.solve();
-    double t_end = MPI_Wtime();
-
     if (mpi_rank == 0) {
         std::cout << "Grid size (n): " << n << "x" << n << std::endl;
-        std::cout << "Time elapsed: " << t_end - t_start << " s" << std::endl;
+        std::cout << "Tolerance: " << tol << ", Max Iterations: " << max_iter << std::endl;
+        std::cout << "---" << std::endl;
+    }
 
-        // Compute L2 error against exact solution
-        double h = 1.0 / (n - 1);
-        double l2_err_sq = 0.0;
-        for (unsigned i = 0; i < n; ++i) {
-            double x = i * h;
-            for (unsigned j = 0; j < n; ++j) {
-                double y = j * h;
-                double diff = u[i * n + j] - u_exact(x, y);
-                l2_err_sq += diff * diff;
-            }
-        }
-        double l2_err = std::sqrt(h * l2_err_sq);
-        std::cout << "L2 Error w.r.t exact solution: " << l2_err << std::endl;
+    // 1. Standard Jacobi - Homogeneous
+    {
+        Jacobi_solver solver(tol, max_iter, n, f_source_homo);
+        double t_start = MPI_Wtime();
+        std::vector<double> u = solver.solve();
+        double t_end = MPI_Wtime();
+        evaluate_solution("Jacobi_Homo", u, u_exact_homo, n, mpi_rank, t_end - t_start);
+    }
 
-        export_vtk("solution.vtk", u, n, h);
-        std::cout << "Solution exported to solution.vtk" << std::endl;
+    // 2. Block Jacobi - Homogeneous
+    {
+        BlockJacobi_solver solver(tol, max_iter, n, f_source_homo);
+        double t_start = MPI_Wtime();
+        std::vector<double> u = solver.solve();
+        double t_end = MPI_Wtime();
+        evaluate_solution("BlockJacobi_Homo", u, u_exact_homo, n, mpi_rank, t_end - t_start);
+    }
+
+    // 3. Block Jacobi - Non-Homogeneous
+    {
+        BlockJacobi_solver solver(tol, max_iter, n, f_source_nonhomo, g_boundary_nonhomo);
+        double t_start = MPI_Wtime();
+        std::vector<double> u = solver.solve();
+        double t_end = MPI_Wtime();
+        evaluate_solution("BlockJacobi_NonHomo", u, u_exact_nonhomo, n, mpi_rank, t_end - t_start);
     }
 
     MPI_Finalize();

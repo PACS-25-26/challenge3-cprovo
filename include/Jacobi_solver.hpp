@@ -6,17 +6,19 @@
 
 class Jacobi_solver {
 public:
-    Jacobi_solver(double tol, unsigned max_iter, unsigned n, std::function<double(double,double)> source) 
-        : tol(tol), max_iter(max_iter), n(n), h(1.0 / (n - 1)), f(source) {};
+    Jacobi_solver(double tol, unsigned max_iter, unsigned n, std::function<double(double,double)> source, std::function<double(double,double)> boundary = [](double, double){ return 0.0; }) 
+        : tol(tol), max_iter(max_iter), n(n), h(1.0 / (n - 1)), f(source), g(boundary) {};
 
-    std::vector<double> solve();
+    virtual std::vector<double> solve();
+    virtual ~Jacobi_solver() = default;
 
-private:
+protected:
     double tol;
     unsigned max_iter;
     unsigned n;
     double h;
     std::function<double(double,double)> f; 
+    std::function<double(double,double)> g; 
 };
 
 #endif // JACOBI_SOLVER_HPP

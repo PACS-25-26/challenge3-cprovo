@@ -27,6 +27,17 @@ std::vector<double> Jacobi_solver::solve() {
     std::vector<double> u_new((local_n + 2) * n, 0.0);
 
     // Initial guess and boundaries are 0.0, so no need to set them up for Dirichlet homogeneous case.
+    for (unsigned i = 1; i <= local_n; ++i) {
+        unsigned global_i = start_row + i - 1;
+        double x = global_i * h;
+        for (unsigned j = 0; j < n; ++j) {
+            double y = j * h;
+            if (global_i == 0 || global_i == n - 1 || j == 0 || j == n - 1) {
+                u[i * n + j] = g(x, y);
+                u_new[i * n + j] = g(x, y);
+            }
+        }
+    }
 
     // Precompute the forcing term f
     std::vector<double> f_val((local_n + 2) * n, 0.0);
