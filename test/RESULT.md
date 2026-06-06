@@ -1,12 +1,30 @@
-# Discussion of Results
+# Scalability Test Results
+Testing on cpu01.mate.polimi.it
+---
+## MPI Processes: 1
+| Grid Size (n) | Time (s) | L2 Error |
+| ------------- | -------- | -------- |
+| 16 | 0.000903923 | 0.0285648 |
+| 32 | 0.00458969 | 0.00954989 |
+| 64 | 0.0287685 | 0.0032912 |
+| 128 | 0.191236 | 0.00114947 |
+| 256 | 1.08636 | 0.000403972 |
 
-## Scalability and Performance
+## MPI Processes: 2
+| Grid Size (n) | Time (s) | L2 Error |
+| ------------- | -------- | -------- |
+| 16 | 0.00480197 | 0.0285468 |
+| 32 | 0.0109457 | 0.00957453 |
+| 64 | 0.0451591 | 0.00331594 |
+| 128 | 0.413056 | 0.00112359 |
+| 256 | 6.69463 | 0.000433343 |
 
-*(Write your discussion here based on the plots and the data inside `benchmark.md`)*
+## MPI Processes: 4
+| Grid Size (n) | Time (s) | L2 Error |
+| ------------- | -------- | -------- |
+| 16 | 0.000398655 | 0.0285572 |
+| 32 | 0.00179392 | 0.00949472 |
+| 64 | 0.0120493 | 0.00311796 |
+| 128 | 0.0984439 | 0.000679995 |
+| 256 | 1.18993 | 0.00074007 |
 
-- Comparing serial and parallel execution...
-- Convergence and scaling with MPI and OpenMP...
-
-## L2 Error Comparison
-
-*(Discuss how the error scales with the grid size $n$, verifying the expected order of convergence)*

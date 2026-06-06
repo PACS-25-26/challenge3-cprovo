@@ -68,7 +68,7 @@ def plot_scalability(results):
     print(f"Plot saved successfully to {plot_file}")
 
 if __name__ == "__main__":
-    md_file = "benchmark.md"
+    md_file = "RESULT.md"
     if os.path.exists(md_file):
         data = parse_result_md(md_file)
         plot_scalability(data)
