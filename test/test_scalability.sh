@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Load Spack modules if running on the Polimi cluster
+if [ -f "/software/spack/share/spack/setup-env.sh" ]; then
+    echo "Loading cluster environment modules..."
+    source /software/spack/share/spack/setup-env.sh
+    spack load gcc@15.2.0
+    spack load intel-oneapi-tbb@2022.3.0
+    spack load openmpi@5.0.8
+fi
+
 # Compile the code
 cd ..
 make clean
@@ -33,8 +42,8 @@ for p in "${PROCS[@]}"; do
         OUTPUT=$(mpirun -np $p ../jacobi_solver $n)
         
         # Extract Time and Error from output for BlockJacobi_Homo
-        TIME=$(echo "$OUTPUT" | grep "\[BlockJacobi_Homo\]" | awk '{print $5}')
-        ERR=$(echo "$OUTPUT" | grep "\[BlockJacobi_Homo\]" | awk '{print $9}')
+        TIME=$(echo "$OUTPUT" | grep "\[BlockJacobi_Homo\]" | awk '{print $4}')
+        ERR=$(echo "$OUTPUT" | grep "\[BlockJacobi_Homo\]" | awk '{print $8}')
         
         echo "| $n | $TIME | $ERR |" >> RESULT.md
         

@@ -20,11 +20,14 @@ def parse_result_md(file_path):
                 parts = [p.strip() for p in line.split('|')]
                 if len(parts) >= 4 and parts[1].isdigit():
                     n = int(parts[1])
-                    time = float(parts[2])
-                    err = float(parts[3])
-                    results[current_procs]["n"].append(n)
-                    results[current_procs]["time"].append(time)
-                    results[current_procs]["error"].append(err)
+                    try:
+                        time = float(parts[2])
+                        err = float(parts[3])
+                        results[current_procs]["n"].append(n)
+                        results[current_procs]["time"].append(time)
+                        results[current_procs]["error"].append(err)
+                    except ValueError:
+                        print(f"Warning: Skipping invalid row for n={n}")
                     
     return results
 
