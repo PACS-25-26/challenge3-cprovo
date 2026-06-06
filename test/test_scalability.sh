@@ -9,8 +9,18 @@ if [ -f "/software/spack/share/spack/setup-env.sh" ]; then
     spack load openmpi@5.0.8
 fi
 
-# Compile the code
-cd ..
+# ==========================================
+# GESTIONE PERCORSI SICURA
+# ==========================================
+# Trova la cartella reale in cui risiede questo script (cioè la cartella 'test')
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+# Trova la cartella principale del progetto (la root dove c'è il Makefile)
+ROOT_DIR="$( cd "$SCRIPT_DIR/.." &> /dev/null && pwd )"
+
+# Spostati nella root ed esegui il Make
+cd "$ROOT_DIR"
+echo "Compilazione in corso nella cartella: $(pwd)"
+
 make clean
 make
 
@@ -19,9 +29,10 @@ if [ ! -f "jacobi_solver" ]; then
     exit 1
 fi
 
-# Move to data folder for results
-cd test
+# Spostati nella cartella test per i risultati
+cd "$SCRIPT_DIR"
 mkdir -p data
+# ==========================================
 
 # Grid sizes to test
 SIZES=(16 32 64 128 256)
@@ -40,20 +51,18 @@ for p in "${PROCS[@]}"; do
     for n in "${SIZES[@]}"; do
         echo "  Grid size: $n"
         
-        # We enforce OMP_NUM_THREADS=2 for hybrid testing, you can change this
         export OMP_NUM_THREADS=2 
         
-        # Run the solver and capture output
-        OUTPUT=$(mpirun -np $p ../jacobi_solver $n)
+        # Esegui l'eseguibile puntando al percorso assoluto della root
+        OUTPUT=$(mpirun -np $p "$ROOT_DIR/jacobi_solver" $n)
         
-        # Extract Time and Error from output for BlockJacobi_Homo
         TIME=$(echo "$OUTPUT" | grep "\[BlockJacobi_Homo\]" | awk '{print $4}')
         ERR=$(echo "$OUTPUT" | grep "\[BlockJacobi_Homo\]" | awk '{print $8}')
         
         echo "| $n | $TIME | $ERR |" >> benchmark.md
         
-        # Save VTK output with specific names
-        for vtk_file in ../Jacobi_Homo.vtk ../BlockJacobi_Homo.vtk ../BlockJacobi_NonHomo.vtk; do
+        # Salva i file VTK cercandoli nella cartella root dove vengono generati
+        for vtk_file in "$ROOT_DIR"/Jacobi_Homo.vtk "$ROOT_DIR"/BlockJacobi_Homo.vtk "$ROOT_DIR"/BlockJacobi_NonHomo.vtk; do
             if [ -f "$vtk_file" ]; then
                 base_name=$(basename "$vtk_file" .vtk)
                 mv "$vtk_file" "data/${base_name}_${p}procs_${n}n.vtk"
