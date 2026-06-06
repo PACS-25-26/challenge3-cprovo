@@ -9,18 +9,8 @@ if [ -f "/software/spack/share/spack/setup-env.sh" ]; then
     spack load openmpi@5.0.8
 fi
 
-# ==========================================
-# GESTIONE PERCORSI SICURA
-# ==========================================
-# Trova la cartella reale in cui risiede questo script (cioè la cartella 'test')
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-# Trova la cartella principale del progetto (la root dove c'è il Makefile)
-ROOT_DIR="$( cd "$SCRIPT_DIR/.." &> /dev/null && pwd )"
-
-# Spostati nella root ed esegui il Make
-cd "$ROOT_DIR"
-echo "Compilazione in corso nella cartella: $(pwd)"
-
+# Compile the code
+cd ..
 make clean
 make
 
@@ -29,47 +19,48 @@ if [ ! -f "jacobi_solver" ]; then
     exit 1
 fi
 
-# Spostati nella cartella test per i risultati
-cd "$SCRIPT_DIR"
+# Move to data folder for results
+cd test
 mkdir -p data
-# ==========================================
 
 # Grid sizes to test
 SIZES=(16 32 64 128 256)
 PROCS=(1 2 4)
 
-echo "# Scalability Test Results" > benchmark.md
-echo "Testing on $(uname -n)" >> benchmark.md
-echo "---" >> benchmark.md
+echo "# Scalability Test Results" > RESULT.md
+echo "Testing on $(uname -n)" >> RESULT.md
+echo "---" >> RESULT.md
 
 for p in "${PROCS[@]}"; do
     echo "Running with $p MPI processes..."
-    echo "## MPI Processes: $p" >> benchmark.md
-    echo "| Grid Size (n) | Time (s) | L2 Error |" >> benchmark.md
-    echo "| ------------- | -------- | -------- |" >> benchmark.md
+    echo "## MPI Processes: $p" >> RESULT.md
+    echo "| Grid Size (n) | Time (s) | L2 Error |" >> RESULT.md
+    echo "| ------------- | -------- | -------- |" >> RESULT.md
     
     for n in "${SIZES[@]}"; do
         echo "  Grid size: $n"
         
+        # We enforce OMP_NUM_THREADS=2 for hybrid testing, you can change this
         export OMP_NUM_THREADS=2 
         
-        # Esegui l'eseguibile puntando al percorso assoluto della root
-        OUTPUT=$(mpirun -np $p "$ROOT_DIR/jacobi_solver" $n)
+        # Run the solver and capture output
+        OUTPUT=$(mpirun -np $p ../jacobi_solver $n)
         
+        # Extract Time and Error from output for BlockJacobi_Homo
         TIME=$(echo "$OUTPUT" | grep "\[BlockJacobi_Homo\]" | awk '{print $4}')
         ERR=$(echo "$OUTPUT" | grep "\[BlockJacobi_Homo\]" | awk '{print $8}')
         
-        echo "| $n | $TIME | $ERR |" >> benchmark.md
+        echo "| $n | $TIME | $ERR |" >> RESULT.md
         
-        # Salva i file VTK cercandoli nella cartella root dove vengono generati
-        for vtk_file in "$ROOT_DIR"/Jacobi_Homo.vtk "$ROOT_DIR"/BlockJacobi_Homo.vtk "$ROOT_DIR"/BlockJacobi_NonHomo.vtk; do
+        # Save VTK output with specific names
+        for vtk_file in ../Jacobi_Homo.vtk ../BlockJacobi_Homo.vtk ../BlockJacobi_NonHomo.vtk; do
             if [ -f "$vtk_file" ]; then
                 base_name=$(basename "$vtk_file" .vtk)
                 mv "$vtk_file" "data/${base_name}_${p}procs_${n}n.vtk"
             fi
         done
     done
-    echo "" >> benchmark.md
+    echo "" >> RESULT.md
 done
 
-echo "Tests completed! Results saved in benchmark.md and VTK files in data/"
+echo "Tests completed! Results saved in RESULT.md and VTK files in data/"
