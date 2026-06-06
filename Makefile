@@ -1,5 +1,5 @@
 CXX = mpicxx
-CXXFLAGS = -std=c++17 -Wall -O3 -fopenmp -Iinclude
+CXXFLAGS = -std=c++17 -Wall -O3 -fopenmp -Iinclude -I/usr/include/eigen3 $(mkEigenInc)
 LDFLAGS = -fopenmp
 
 SRCS = src/main.cpp src/Jacobi_solver.cpp src/BlockJacobi_solver.cpp
