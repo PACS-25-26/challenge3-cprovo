@@ -14,6 +14,11 @@ cd ..
 make clean
 make
 
+if [ ! -f "jacobi_solver" ]; then
+    echo "Error: jacobi_solver failed to compile. Exiting."
+    exit 1
+fi
+
 # Move to data folder for results
 cd test
 mkdir -p data
@@ -22,15 +27,15 @@ mkdir -p data
 SIZES=(16 32 64 128 256)
 PROCS=(1 2 4)
 
-echo "# Scalability Test Results" > RESULT.md
-echo "Testing on $(uname -n)" >> RESULT.md
-echo "---" >> RESULT.md
+echo "# Scalability Test Results" > benchmark.md
+echo "Testing on $(uname -n)" >> benchmark.md
+echo "---" >> benchmark.md
 
 for p in "${PROCS[@]}"; do
     echo "Running with $p MPI processes..."
-    echo "## MPI Processes: $p" >> RESULT.md
-    echo "| Grid Size (n) | Time (s) | L2 Error |" >> RESULT.md
-    echo "| ------------- | -------- | -------- |" >> RESULT.md
+    echo "## MPI Processes: $p" >> benchmark.md
+    echo "| Grid Size (n) | Time (s) | L2 Error |" >> benchmark.md
+    echo "| ------------- | -------- | -------- |" >> benchmark.md
     
     for n in "${SIZES[@]}"; do
         echo "  Grid size: $n"
@@ -45,7 +50,7 @@ for p in "${PROCS[@]}"; do
         TIME=$(echo "$OUTPUT" | grep "\[BlockJacobi_Homo\]" | awk '{print $4}')
         ERR=$(echo "$OUTPUT" | grep "\[BlockJacobi_Homo\]" | awk '{print $8}')
         
-        echo "| $n | $TIME | $ERR |" >> RESULT.md
+        echo "| $n | $TIME | $ERR |" >> benchmark.md
         
         # Save VTK output with specific names
         for vtk_file in ../Jacobi_Homo.vtk ../BlockJacobi_Homo.vtk ../BlockJacobi_NonHomo.vtk; do
@@ -55,7 +60,7 @@ for p in "${PROCS[@]}"; do
             fi
         done
     done
-    echo "" >> RESULT.md
+    echo "" >> benchmark.md
 done
 
-echo "Tests completed! Results saved in RESULT.md and VTK files in data/"
+echo "Tests completed! Results saved in benchmark.md and VTK files in data/"
